@@ -43,9 +43,10 @@ const sdk = new NodeSDK({
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
-sdk.start()
-  .then(() => console.log("Auth Service tracing initialized"))
-  .catch((err) => console.error("Error initializing tracing", err));
+sdk.start();
+
+console.log("Auth Service tracing initialized");
+
 
 
 
