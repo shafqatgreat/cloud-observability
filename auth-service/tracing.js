@@ -21,9 +21,9 @@ const exporter = new OTLPTraceExporter({
 });
 
 const sdk = new NodeSDK({
-  resource:resource,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
+  resource,
 });
 
 sdk.start();
