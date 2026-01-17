@@ -28,7 +28,7 @@ const exporter = new OTLPTraceExporter({
     // url: "http://localhost:4318/v1/traces"
     // url: "https://shafqatgreat.grafana.net/otlp/v1/traces",
     url: OTEL_EXPORTER_OTLP_ENDPOINT,
-     headers: {OTEL_EXPORTER_OTLP_HEADERS,},
+     headers: {OTEL_EXPORTER_OTLP_HEADERS},
   });
 
 
