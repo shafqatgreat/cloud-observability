@@ -12,7 +12,10 @@ const headers = Object.fromEntries(
     return [k, v];
   })
 );
-
+const resource=resourceFromAttributes({
+    [SERVICE_NAME]: "auth-service",
+    [SERVICE_VERSION]: "1.0.0",
+  });
 
 
 const exporter = new OTLPTraceExporter({
@@ -26,6 +29,7 @@ const exporter = new OTLPTraceExporter({
 
 
 const sdk = new NodeSDK({
+  resource,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
 });
