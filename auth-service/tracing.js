@@ -3,7 +3,6 @@ const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { resourceFromAttributes } = require("@opentelemetry/resources");
-const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
 const {
   SERVICE_NAME,
   SERVICE_VERSION,
@@ -35,11 +34,7 @@ const exporter = new OTLPTraceExporter({
 
 
 const sdk = new NodeSDK({
-  resource: new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: "auth-service",
-        [SemanticResourceAttributes.SERVICE_VERSION]: "1.0.0",
-    }),
-  // resource: resources,
+  resource: resources,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
 });
