@@ -3,6 +3,7 @@ const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { resourceFromAttributes } = require("@opentelemetry/resources");
+const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
 const {
   SERVICE_NAME,
   SERVICE_VERSION,
@@ -12,7 +13,11 @@ const resources = resourceFromAttributes({
   [SERVICE_NAME]: "auth-service",
   [SERVICE_VERSION]: "1.0.0",
 });
-
+// / ✅ Resource with proper service name
+const resource = new Resource({
+  [SERVICE_NAME]: "auth-service",
+  [SERVICE_VERSION]: "1.0.0",
+});
 
 const OTEL_EXPORTER_OTLP_ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 const OTEL_EXPORTER_OTLP_HEADERS = process.env.OTEL_API_TOKEN;
@@ -33,15 +38,14 @@ const exporter = new OTLPTraceExporter({
 
 
 const sdk = new NodeSDK({
-  resource: resources,
+  resource: resource,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
-sdk.start();
-
-console.log("Auth Service tracing initialized");
-
+sdk.start()
+  .then(() => console.log("Auth Service tracing initialized"))
+  .catch((err) => console.error("Error initializing tracing", err));
 
 
 
