@@ -1,7 +1,7 @@
 require("./tracing");
 const express = require("express");
 const app = express();
-
+const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.post("/login",(req,res)=>{
@@ -16,8 +16,12 @@ app.post("/login",(req,res)=>{
     },100);
 });
 
+// Adjust code for Railway cloud
 
-
-app.listen(3000, () => {
-  console.log("Auth Service running on port 3000");
+app.listen(PORT, () => {
+  console.log(`Auth Service running on port ${PORT}`);
 });
+
+// app.listen(3000, () => {
+//   console.log("Auth Service running on port 3000");
+// });
