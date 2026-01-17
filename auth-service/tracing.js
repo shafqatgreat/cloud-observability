@@ -4,8 +4,7 @@ const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumenta
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 
 const OTEL_EXPORTER_OTLP_ENDPOINT="https://otlp-gateway-prod-me-central-1.grafana.net/otlp"
-const OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20MTQ5NzY5ODpnbGNfZXlKdklqb2lNVFkwTXpNek15SXNJbTRpT2lKdGVTMW5jbUZtWVc1aExYUnZhMlZ1SWl3aWF5STZJbVk1TURGUWNWbDFPRGd5WVVaUFNUUk1ZelV6TVdKVldTSXNJbTBpT25zaWNpSTZJbkJ5YjJRdGJXVXRZMlZ1ZEhKaGJDMHhJbjE5"
-
+const OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20MTQ5NzY5ODpnbGNfZXlKdklqb2lNVFkwTXpNek15SXNJbTRpT2lKamJTMTBiMnRsYmlJc0ltc2lPaUpyY2xnM1dETmxTRWN3T1hOc01ESlhORzVxZHpOeU56Y2lMQ0p0SWpwN0luSWlPaUp3Y205a0xXMWxMV05sYm5SeVlXd3RNU0o5ZlE9PQ=="
 // Convert "Authorization=Basic xxx" → object
 const headers = Object.fromEntries(
   OTEL_EXPORTER_OTLP_HEADERS.split(",").map(h => {
