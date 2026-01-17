@@ -2,12 +2,13 @@
 const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
-// const { SERVICE_NAME, SERVICE_VERSION } = require("@opentelemetry/semantic-conventions");
+const { Resource } = require("@opentelemetry/resources");
+const { SERVICE_NAME, SERVICE_VERSION } = require("@opentelemetry/semantic-conventions");
 
-// const resource = new Resource({
-//   [SERVICE_NAME]: "auth-service",
-//   [SERVICE_VERSION]: "1.0.0",
-// });
+const resource = new Resource({
+  [SERVICE_NAME]: "auth-service",
+  [SERVICE_VERSION]: "1.0.0",
+});
 
 const OTEL_EXPORTER_OTLP_ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 const OTEL_EXPORTER_OTLP_HEADERS = process.env.OTEL_EXPORTER_OTLP_HEADERS; // should be like "Basic <token>"
@@ -23,7 +24,7 @@ const exporter = new OTLPTraceExporter({
 const sdk = new NodeSDK({
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
-  // resource,
+  resource,
 });
 
 sdk.start();
