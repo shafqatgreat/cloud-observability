@@ -3,11 +3,10 @@ const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { Resource } = require("@opentelemetry/resources");
-const { SERVICE_NAME, SERVICE_VERSION } = require("@opentelemetry/semantic-conventions");
 
 const resource = new Resource({
-  [SERVICE_NAME]: "auth-service",
-  [SERVICE_VERSION]: "1.0.0",
+  "service.name": "auth-service",
+  "service.version": "1.0.0",
 });
 
 const OTEL_EXPORTER_OTLP_ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
