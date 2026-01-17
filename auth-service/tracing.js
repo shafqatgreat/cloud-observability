@@ -33,7 +33,7 @@ const exporter = new OTLPTraceExporter({
 
 
 const sdk = new NodeSDK({
-  resource: resources,
+  // resource: resources,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
 });
