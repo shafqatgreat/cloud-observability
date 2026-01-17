@@ -3,8 +3,15 @@ const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { resourceFromAttributes } = require("@opentelemetry/resources");
+const {
+  SERVICE_NAME,
+  SERVICE_VERSION,
+} = require("@opentelemetry/semantic-conventions");
 
-
+const resources = resourceFromAttributes({
+  [SERVICE_NAME]: "auth-service",
+  [SERVICE_VERSION]: "1.0.0",
+});
 
 const OTEL_EXPORTER_OTLP_ENDPOINT="https://otlp-gateway-prod-me-central-1.grafana.net/otlp"
 const OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20MTQ5NzY5ODpnbGNfZXlKdklqb2lNVFkwTXpNek15SXNJbTRpT2lKamJTMTBiMnRsYmlJc0ltc2lPaUpyY2xnM1dETmxTRWN3T1hOc01ESlhORzVxZHpOeU56Y2lMQ0p0SWpwN0luSWlPaUp3Y205a0xXMWxMV05sYm5SeVlXd3RNU0o5ZlE9PQ=="
@@ -15,22 +22,19 @@ const headers = Object.fromEntries(
     return [k, v];
   })
 );
-const resources=resourceFromAttributes({
-    [SERVICE_NAME]: "auth-service",
-    [SERVICE_VERSION]: "1.0.0",
-  });
-
-
 const exporter = new OTLPTraceExporter({
     // url: "http://localhost:4318/v1/traces"
     // url: "https://shafqatgreat.grafana.net/otlp/v1/traces",
     url: OTEL_EXPORTER_OTLP_ENDPOINT,
-     headers,
+     headers: {
+    Authorization:
+      "Basic MTQ5NzY5ODpnbGNfZXlKdklqb2lNVFkwTXpNek15SXNJbTRpT2lKamJTMTBiMnRsYmlJc0ltc2lPaUpyY2xnM1dETmxTRWN3T1hOc01ESlhORzVxZHpOeU56Y2lMQ0p0SWpwN0luSWlPaUp3Y205a0xXMWxMV05sYm5SeVlXd3RNU0o5ZlE9PQ==",
+  },
   });
 
 
 const sdk = new NodeSDK({
-
+  resource: resources,
   traceExporter: exporter,
   instrumentations: [getNodeAutoInstrumentations()],
 });
