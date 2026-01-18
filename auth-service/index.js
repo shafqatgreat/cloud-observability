@@ -1,16 +1,9 @@
-'use strict';
-
-const startTracing = require("./tracing");
-startTracing(); // 🔥 SAFE
+require("./tracing")();
 
 const express = require("express");
 const app = express();
 
 app.use(express.json());
-
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
 
 app.post("/login", (req, res) => {
   const { username } = req.body;

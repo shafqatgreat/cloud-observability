@@ -11,7 +11,7 @@ function startTracing() {
     const authHeader = process.env.OTEL_EXPORTER_OTLP_HEADERS;
 
     if (!endpoint || !authHeader) {
-      console.warn("⚠️ OpenTelemetry disabled — env vars missing");
+      console.warn("⚠️ OpenTelemetry disabled — missing env vars");
       return;
     }
 
@@ -33,13 +33,10 @@ function startTracing() {
       instrumentations: [getNodeAutoInstrumentations()],
     });
 
-    sdk.start()
-      .then(() => {
-        console.log("✅ OpenTelemetry tracing started");
-      })
-      .catch((err) => {
-        console.error("❌ Tracing init failed (ignored):", err.message);
-      });
+    // ✅ NO then(), NO await
+    sdk.start();
+
+    console.log("✅ OpenTelemetry tracing started");
 
   } catch (err) {
     console.error("❌ Tracing setup error (ignored):", err.message);
@@ -47,7 +44,6 @@ function startTracing() {
 }
 
 module.exports = startTracing;
-
 
 
 
