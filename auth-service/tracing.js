@@ -23,9 +23,8 @@ function startTracing() {
     const exporter = new OTLPTraceExporter({
       url: endpoint,
       headers: {
-        Authorization: process.env.OTEL_EXPORTER_OTLP_HEADERS,
+        Authorization: authHeader,
       },
-      
     });
 
     const sdk = new NodeSDK({
