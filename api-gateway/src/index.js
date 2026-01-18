@@ -8,7 +8,7 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-
+                                  
 const AUTH_SERVICE_URL = "https://auth-service-cm.up.railway.app"; // replace with your Railway Auth URL
 const ORDER_SERVICE_URL = "https://order-service-your-url.up.railway.app"; // optional, later
 

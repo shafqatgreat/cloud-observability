@@ -23,7 +23,7 @@ function startTracing() {
     const exporter = new OTLPTraceExporter({
       url: endpoint,
       headers: {
-        Authorization: `${authHeader}`,
+        Authorization: process.env.OTEL_EXPORTER_OTLP_HEADERS,
       },
       
     });
