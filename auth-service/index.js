@@ -1,24 +1,20 @@
 'use strict';
 
-// 🔹 Load tracing FIRST (must be before express)
-require("./tracing");
+const startTracing = require("./tracing");
+startTracing(); // 🔥 SAFE
 
 const express = require("express");
 const app = express();
 
-// Middleware
 app.use(express.json());
 
-// Health check (IMPORTANT for Railway)
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// Routes
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
   const { username } = req.body;
 
-  // Simulate authentication
   setTimeout(() => {
     res.json({
       status: "ok",
@@ -28,13 +24,10 @@ app.post("/login", async (req, res) => {
   }, 100);
 });
 
-// Railway provides the port
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Auth Service running on port ${PORT}`);
 });
-
 
 
 

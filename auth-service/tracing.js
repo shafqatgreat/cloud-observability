@@ -5,33 +5,50 @@ const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumenta
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { Resource } = require("@opentelemetry/resources");
 
-async function startTracing() {
-  const resource = new Resource({
-    "service.name": "auth-service",
-    "service.version": "1.0.0",
-  });
+function startTracing() {
+  try {
+    // ✅ If env not configured, skip tracing
+    if (
+      !process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
+      !process.env.OTEL_EXPORTER_OTLP_HEADERS
+    ) {
+      console.warn("⚠️ Tracing disabled: OTEL env vars missing");
+      return;
+    }
 
-  const exporter = new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers: {
-      Authorization: process.env.OTEL_EXPORTER_OTLP_HEADERS,
-    },
-  });
+    const resource = new Resource({
+      "service.name": "auth-service",
+      "service.version": "1.0.0",
+    });
 
-  const sdk = new NodeSDK({
-    resource,
-    traceExporter: exporter,
-    instrumentations: [getNodeAutoInstrumentations()],
-  });
+    const exporter = new OTLPTraceExporter({
+      url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+      headers: {
+        Authorization: process.env.OTEL_EXPORTER_OTLP_HEADERS,
+      },
+    });
 
-  await sdk.start(); // ✅ IMPORTANT
-  console.log("Auth Service tracing initialized");
+    const sdk = new NodeSDK({
+      resource,
+      traceExporter: exporter,
+      instrumentations: [getNodeAutoInstrumentations()],
+    });
+
+    // ✅ DO NOT await
+    sdk.start()
+      .then(() => {
+        console.log("✅ OpenTelemetry tracing started");
+      })
+      .catch((err) => {
+        console.error("❌ Tracing init failed (ignored):", err.message);
+      });
+
+  } catch (err) {
+    console.error("❌ Tracing setup error (ignored):", err.message);
+  }
 }
 
-startTracing().catch(err => {
-  console.error("Tracing failed to start", err);
-});
-
+module.exports = startTracing;
 
 
 
