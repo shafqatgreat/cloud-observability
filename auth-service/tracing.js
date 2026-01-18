@@ -23,8 +23,9 @@ function startTracing() {
     const exporter = new OTLPTraceExporter({
       url: endpoint,
       headers: {
-        Authorization: authHeader,
+        Authorization: `${authHeader}`,
       },
+      
     });
 
     const sdk = new NodeSDK({
