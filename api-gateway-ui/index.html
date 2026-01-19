@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Microservices Auth Simulation</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 40px;
+    }
+
+    h2 { color: #38bdf8; }
+
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 300px;
+    }
+
+    button {
+      background: #38bdf8;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    pre {
+      background: #020617;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    .box {
+      border: 1px solid #334155;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🔐 API Gateway Authorization Flow Simulator</h1>
+
+<!-- LOGIN -->
+<div class="box">
+  <h2>1️⃣ Login (Auth Service)</h2>
+
+  <input id="email" placeholder="email" value="test@test.com" /><br />
+  <input id="password" type="password" placeholder="password" value="123456" /><br />
+
+  <button onclick="login()">Login</button>
+
+  <pre id="loginResult"></pre>
+</div>
+
+<!-- TOKEN -->
+<div class="box">
+  <h2>2️⃣ Stored Identity Token</h2>
+  <button onclick="showToken()">Show Token</button>
+  <pre id="tokenBox"></pre>
+</div>
+
+<!-- ORDER SERVICE -->
+<div class="box">
+  <h2>3️⃣ Access Protected Order Service</h2>
+  <button onclick="getOrders()">Get Orders</button>
+  <pre id="orderResult"></pre>
+</div>
+
+<script>
+  const AUTH_SERVICE = "https://auth-service-cm.up.railway.app/login";
+  const API_GATEWAY = "https://api-gateway.up.railway.app/orders";
+
+  async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const res = await fetch(AUTH_SERVICE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    localStorage.setItem("token", data.token);
+
+    document.getElementById("loginResult").textContent =
+      JSON.stringify(data, null, 2);
+  }
+
+  function showToken() {
+    const token = localStorage.getItem("token");
+    document.getElementById("tokenBox").textContent = token || "No token found";
+  }
+
+  async function getOrders() {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(API_GATEWAY, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    const data = await res.json();
+
+    document.getElementById("orderResult").textContent =
+      JSON.stringify(data, null, 2);
+  }
+</script>
+
+</body>
+</html>
