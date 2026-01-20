@@ -1,5 +1,5 @@
 const AUTH_SERVICE_URL = "https://auth-service-cm.up.railway.app"; // replace with your Railway Auth URL
-const ORDER_SERVICE_URL = "https://order-service-your-url.up.railway.app"; // optional, later
+const ORDER_SERVICE_URL = "https://order-service-cm.up.railway.app"; // optional, later
 
 // CORS helper
 const corsHeaders = (origin = "*") => ({

@@ -17,6 +17,34 @@ app.post("/login", (req, res) => {
   }, 100);
 });
 
+app.post("/verify", (req, res) => {
+  const auth = req.headers.authorization;
+
+  if (!auth) {
+    return res.json({ valid: false });
+  }
+
+  const token = auth.replace("Bearer ", "");
+
+  if (token !== "jwt-token-123") {
+    return res.json({ valid: false });
+  }
+
+  res.json({
+    valid: true,
+    user: {
+      id: "u-101",
+      email: "test@test.com",
+      role: "user"
+    }
+  });
+});
+
+
+
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Auth Service running on port ${PORT}`);
