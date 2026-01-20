@@ -3,7 +3,6 @@
 require('./tracing'); // same as auth-service
 
 const express = require('express');
-const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
