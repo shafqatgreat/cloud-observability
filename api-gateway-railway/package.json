@@ -15,7 +15,6 @@
     "@opentelemetry/auto-instrumentations-node": "^0.68.0",
     "@opentelemetry/sdk-node": "^0.210.0",
     "express": "^5.2.1",
-    "node-fetch": "^3.3.2",
     "@opentelemetry/resources": "^1.13.0"
   }
 }
