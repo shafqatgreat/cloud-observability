@@ -16,7 +16,7 @@ function startTracing() {
     }
 
     const resource = resourceFromAttributes({
-      "service.name": "auth-service",
+      "service.name": "order-service",
       "service.version": "1.0.0",
     });
 

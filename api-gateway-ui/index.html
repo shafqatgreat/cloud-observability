@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Microservices Auth Simulation</title>
+  <title>API Gateway Auth Simulation1</title>
+
   <style>
     body {
       font-family: Arial;
@@ -14,8 +15,8 @@
 
     input, button {
       padding: 10px;
-      margin: 5px 0;
-      width: 300px;
+      margin: 6px 0;
+      width: 320px;
     }
 
     button {
@@ -48,7 +49,7 @@
 
 <!-- LOGIN -->
 <div class="box">
-  <h2>1️⃣ Login (Auth Service)</h2>
+  <h2>1️⃣ Login (via API Gateway)</h2>
 
   <input id="email" placeholder="email" value="test@test.com" /><br />
   <input id="password" type="password" placeholder="password" value="123456" /><br />
@@ -73,14 +74,14 @@
 </div>
 
 <script>
-  const AUTH_SERVICE = "https://auth-service-cm.up.railway.app/login";
-  const API_GATEWAY = "https://api-gateway.up.railway.app/orders";
+  // ✅ ONLY API GATEWAY — NEVER INTERNAL SERVICES
+  const API_GATEWAY = "https://api-gateway.shafqatgreat.workers.dev";
 
   async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const res = await fetch(AUTH_SERVICE, {
+    const res = await fetch(`${API_GATEWAY}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -90,7 +91,9 @@
 
     const data = await res.json();
 
-    localStorage.setItem("token", data.token);
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
 
     document.getElementById("loginResult").textContent =
       JSON.stringify(data, null, 2);
@@ -98,13 +101,14 @@
 
   function showToken() {
     const token = localStorage.getItem("token");
-    document.getElementById("tokenBox").textContent = token || "No token found";
+    document.getElementById("tokenBox").textContent =
+      token || "❌ No token stored";
   }
 
   async function getOrders() {
     const token = localStorage.getItem("token");
 
-    const res = await fetch(API_GATEWAY, {
+    const res = await fetch(`${API_GATEWAY}/orders`, {
       headers: {
         Authorization: "Bearer " + token
       }
