@@ -76,8 +76,10 @@ async function forwardLogin(request) {
 // ORDER FORWARD
 // --------------------
 async function forwardOrder(request, user) {
-  const resp = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-    method: request.method,
+  const method = request.method;
+
+  const options = {
+    method,
     headers: {
       "Content-Type": "application/json",
 
@@ -89,11 +91,36 @@ async function forwardOrder(request, user) {
       // 🔍 tracing propagation
       ...extractTraceHeaders(request),
     },
-    body: await request.text(),
-  });
+  };
 
+  // ✅ only attach body for non-GET
+  if (method !== "GET" && method !== "HEAD") {
+    options.body = await request.text();
+  }
+
+  const resp = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
   return await resp.json();
 }
+
+// async function forwardOrder(request, user) {
+//   const resp = await fetch(`${ORDER_SERVICE_URL}/orders`, {
+//     method: request.method,
+//     headers: {
+//       "Content-Type": "application/json",
+
+//       // 🔐 identity propagation
+//       "x-user-id": user.id,
+//       "x-user-email": user.email,
+//       "x-user-role": user.role,
+
+//       // 🔍 tracing propagation
+//       ...extractTraceHeaders(request),
+//     },
+//     body: await request.text(),
+//   });
+
+//   return await resp.json();
+// }
 // --------------------
 // WORKER
 // --------------------
