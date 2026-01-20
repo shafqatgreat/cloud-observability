@@ -78,31 +78,27 @@ async function forwardLogin(request) {
 async function forwardOrder(request, user) {
   const method = request.method;
 
-  const headers = {
-    "Content-Type": "application/json",
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
 
-    // 🔐 identity propagation
-    "x-user-id": user.id,
-    "x-user-email": user.email,
-    "x-user-role": user.role,
+      // 🔐 identity propagation
+      "x-user-id": user.id,
+      "x-user-email": user.email,
+      "x-user-role": user.role,
 
-    // 🔍 tracing propagation
-    ...extractTraceHeaders(request),
+      // 🔍 tracing propagation
+      ...extractTraceHeaders(request),
+    },
   };
 
-  // ✅ NEVER read body for GET
-  let body = null;
-
+  // ✅ only attach body for non-GET
   if (method !== "GET" && method !== "HEAD") {
-    body = await request.text();
+    options.body = await request.text();
   }
 
-  const resp = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-    method,
-    headers,
-    ...(body ? { body } : {}),
-  });
-
+  const resp = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
   return await resp.json();
 }
 
