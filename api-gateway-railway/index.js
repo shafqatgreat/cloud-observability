@@ -1,6 +1,6 @@
 'use strict';
 
-require('./tracing'); // same as auth-service
+require('./tracing')(); // same as auth-service
 
 const express = require('express');
 
