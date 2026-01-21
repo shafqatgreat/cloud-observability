@@ -1,17 +1,12 @@
 'use strict';
 
-require('./tracing')(); // must be FIRST
-
-const {
-  context,
-  propagation,
-  trace,
-  SpanKind
-} = require('@opentelemetry/api');
-
-const tracer = trace.getTracer('api-gateway-tracer');
+require('./tracing')(); // must be first to initialize OTEL
 
 const express = require('express');
+const fetch = require('node-fetch'); // ensure installed
+const { context, propagation, trace, SpanKind } = require('@opentelemetry/api');
+
+const tracer = trace.getTracer('api-gateway-tracer');
 const app = express();
 app.use(express.json());
 
@@ -19,14 +14,12 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 
 /**
- * ==================================================
- * ROOT TRACE MIDDLEWARE — GATEWAY IS TRACE BOUNDARY
- * ==================================================
+ * ================================
+ * ROOT TRACE MIDDLEWARE
+ * Gateway always starts the root span
+ * ================================
  */
 app.use((req, res, next) => {
-  // Gateway always starts the trace
-  const ctx = context.active();
-
   const span = tracer.startSpan(
     `HTTP ${req.method} ${req.path}`,
     {
@@ -36,15 +29,12 @@ app.use((req, res, next) => {
         'http.method': req.method,
         'http.route': req.path,
       },
-    },
-    ctx
+    }
   );
 
-  // attach span context to request for downstream propagation
-  req.otSpan = span;
-  req.otSpanCtx = trace.setSpan(ctx, span);
+  const spanCtx = trace.setSpan(context.active(), span);
 
-  context.with(req.otSpanCtx, () => {
+  context.with(spanCtx, () => {
     res.on('finish', () => {
       span.setAttribute('http.status_code', res.statusCode);
       span.end();
@@ -61,27 +51,24 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type,Authorization,x-trace-id'
-  );
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-trace-id');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
 /**
  * --------------------
- * TRACE INJECTION
+ * Inject trace headers for downstream services
  * --------------------
  */
-function injectTraceHeaders(headers = {}, spanCtx) {
+function injectTraceHeaders(headers = {}) {
   const carrier = {};
-  propagation.inject(spanCtx || context.active(), carrier);
+  propagation.inject(context.active(), carrier);
 
   return {
     ...headers,
     ...carrier,
-    'x-internal-call': 'true', // marks request as internal
+    'x-internal-call': 'true', // marks internal propagation
   };
 }
 
@@ -92,15 +79,13 @@ function injectTraceHeaders(headers = {}, spanCtx) {
  */
 app.post('/login', async (req, res) => {
   try {
-    const data = await context.with(req.otSpanCtx, async () => {
-      const response = await fetch(`${AUTH_SERVICE_URL}/login`, {
-        method: 'POST',
-        headers: injectTraceHeaders({ 'Content-Type': 'application/json' }, req.otSpanCtx),
-        body: JSON.stringify(req.body),
-      });
-      return response.json();
+    const response = await fetch(`${AUTH_SERVICE_URL}/login`, {
+      method: 'POST',
+      headers: injectTraceHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(req.body),
     });
 
+    const data = await response.json();
     res.json(data);
 
   } catch (err) {
@@ -110,7 +95,7 @@ app.post('/login', async (req, res) => {
 
 /**
  * --------------------
- * AUTHORIZATION
+ * AUTHORIZATION MIDDLEWARE
  * --------------------
  */
 async function authorize(req, res, next) {
@@ -118,17 +103,15 @@ async function authorize(req, res, next) {
   if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
   try {
-    const data = await context.with(req.otSpanCtx, async () => {
-      const response = await fetch(`${AUTH_SERVICE_URL}/verify`, {
-        method: 'POST',
-        headers: injectTraceHeaders(
-          { 'Content-Type': 'application/json', Authorization: token },
-          req.otSpanCtx
-        ),
-      });
-      return response.json();
+    const response = await fetch(`${AUTH_SERVICE_URL}/verify`, {
+      method: 'POST',
+      headers: injectTraceHeaders({
+        'Content-Type': 'application/json',
+        Authorization: token,
+      }),
     });
 
+    const data = await response.json();
     if (!data.valid) return res.status(401).json({ message: 'Unauthorized' });
 
     req.user = data.user;
@@ -146,28 +129,22 @@ async function authorize(req, res, next) {
  */
 app.all('/orders', authorize, async (req, res) => {
   try {
-    const data = await context.with(req.otSpanCtx, async () => {
-      const options = {
-        method: req.method,
-        headers: injectTraceHeaders(
-          {
-            'Content-Type': 'application/json',
-            'x-user-id': req.user.id,
-            'x-user-email': req.user.email,
-            'x-user-role': req.user.role,
-          },
-          req.otSpanCtx
-        ),
-      };
+    const options = {
+      method: req.method,
+      headers: injectTraceHeaders({
+        'Content-Type': 'application/json',
+        'x-user-id': req.user.id,
+        'x-user-email': req.user.email,
+        'x-user-role': req.user.role,
+      }),
+    };
 
-      if (req.method !== 'GET' && req.method !== 'HEAD') {
-        options.body = JSON.stringify(req.body);
-      }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      options.body = JSON.stringify(req.body);
+    }
 
-      const response = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
-      return response.json();
-    });
-
+    const response = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
+    const data = await response.json();
     res.json(data);
 
   } catch (err) {
@@ -181,6 +158,4 @@ app.all('/orders', authorize, async (req, res) => {
  * --------------------
  */
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () =>
-  console.log(`✅ API Gateway running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`✅ API Gateway running on port ${PORT}`));
