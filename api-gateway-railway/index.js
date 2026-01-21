@@ -2,34 +2,14 @@
 
 require('./tracing')(); // same as auth-service
 const tracer = require("./tracer");
-const { context, propagation } = require("@opentelemetry/api");
+const {
+  context,
+  propagation,
+  trace,
+  SpanKind
+} = require('@opentelemetry/api');
 
-app.use((req, res, next) => {
-
-  // extract incoming trace context
-  const ctx = propagation.extract(context.active(), req.headers);
-
-  const span = tracer.startSpan(
-    `API ${req.method} ${req.path}`,
-    {
-      kind: 1, // SERVER
-    },
-    ctx
-  );
-
-  // bind span to request lifecycle
-  context.with(trace.setSpan(ctx, span), () => {
-
-    res.on("finish", () => {
-      span.setAttribute("http.status_code", res.statusCode);
-      span.end();
-    });
-
-    next();
-  });
-});
-
-
+const tracer = trace.getTracer('api-gateway-tracer');
 // Express Tasks********
 const express = require('express');
 const app = express();
@@ -37,6 +17,46 @@ app.use(express.json());
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
+
+/**
+ * ================================
+ * 2️⃣ ROOT TRACE MIDDLEWARE
+ * (creates parent span)
+ * ================================
+ */
+app.use((req, res, next) => {
+
+  // extract trace context from incoming request
+  const parentCtx = propagation.extract(context.active(), req.headers);
+
+  const span = tracer.startSpan(
+    `HTTP ${req.method} ${req.path}`,
+    {
+      kind: SpanKind.SERVER,
+      attributes: {
+        'http.method': req.method,
+        'http.route': req.path,
+        'service.name': 'api-gateway-railway',
+      },
+    },
+    parentCtx
+  );
+
+  const spanCtx = trace.setSpan(parentCtx, span);
+
+  context.with(spanCtx, () => {
+
+    res.on('finish', () => {
+      span.setAttribute('http.status_code', res.statusCode);
+      span.end();
+    });
+
+    next();
+  });
+});     
+
+
+
 
 // --------------------
 // CORS
@@ -70,7 +90,7 @@ app.post('/login', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...extractTraceHeaders(req),
+        // ...extractTraceHeaders(req),
       },
       body: JSON.stringify(req.body),
     });
@@ -94,7 +114,7 @@ async function authorize(req, res, next) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: token,
-        ...extractTraceHeaders(req),
+        // ...extractTraceHeaders(req),
       },
     });
     const data = await response.json();
@@ -119,7 +139,7 @@ app.all('/orders', authorize, async (req, res) => {
         'x-user-id': req.user.id,
         'x-user-email': req.user.email,
         'x-user-role': req.user.role,
-        ...extractTraceHeaders(req),
+        // ...extractTraceHeaders(req),
       },
     };
     if (req.method !== 'GET' && req.method !== 'HEAD') {
