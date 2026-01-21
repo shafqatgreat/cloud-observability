@@ -1,39 +1,64 @@
 'use strict';
 
-const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { Resource } = require('@opentelemetry/resources');
+const { NodeSDK } = require("@opentelemetry/sdk-node");
+const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
+const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
+const { resourceFromAttributes } = require("@opentelemetry/resources");
 
-function setupTracing() {
+function startTracing() {
   try {
     const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
-    const headers = process.env.OTEL_EXPORTER_OTLP_HEADERS
-      ? JSON.parse(process.env.OTEL_EXPORTER_OTLP_HEADERS)
-      : {};
+    const authHeader = process.env.OTEL_EXPORTER_OTLP_HEADERS;
 
-    if (!endpoint) {
-      console.warn('⚠️ OpenTelemetry disabled — missing OTEL_EXPORTER_OTLP_ENDPOINT');
+    if (!endpoint || !authHeader) {
+      console.warn("⚠️ OpenTelemetry disabled — missing env vars");
       return;
     }
 
+    const resource = resourceFromAttributes({
+      "service.name": "api-gateway-railway",
+      "service.version": "1.0.0",
+    });
+
+    const exporter = new OTLPTraceExporter({
+      url: endpoint,
+      headers: {
+         authHeader,
+      },
+    });
+
     const sdk = new NodeSDK({
-      resource: new Resource({
-        'service.name': 'api-gateway-railway',
-        'service.version': '1.0.0',
-      }),
-      traceExporter: new OTLPTraceExporter({
-        url: endpoint,
-        headers,
-      }),
+      resource,
+      traceExporter: exporter,
       instrumentations: [getNodeAutoInstrumentations()],
     });
 
+    // ✅ NO then(), NO await
     sdk.start();
-    console.log('✅ OpenTelemetry tracing started for API Gateway');
+
+    console.log("✅ OpenTelemetry tracing started");
+
   } catch (err) {
-    console.error('❌ Tracing setup error:', err.message);
+    console.error("❌ Tracing setup error (ignored):", err.message);
   }
 }
 
-module.exports = setupTracing;
+module.exports = startTracing;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
