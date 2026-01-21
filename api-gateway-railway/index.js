@@ -80,6 +80,15 @@ function extractTraceHeaders(req) {
   if (ts) headers.tracestate = ts;
   return headers;
 }
+function injectTraceHeaders(headers = {}) {
+  const carrier = {};
+  propagation.inject(context.active(), carrier);
+
+  return {
+    ...headers,
+    ...carrier,
+  };
+}
 
 // --------------------
 // Forward login

@@ -35,7 +35,8 @@ function startTracing() {
 
     // ✅ NO then(), NO await
     sdk.start();
-
+    // ✅ expose globally
+    global.otelSdk = sdk;
     console.log("✅ OpenTelemetry tracing started");
 
   } catch (err) {
