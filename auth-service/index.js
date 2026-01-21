@@ -1,34 +1,4 @@
 require("./tracing")();
-const { context, propagation } = require("@opentelemetry/api");
-
-app.use((req, res, next) => {
-
-  // extract incoming trace context
-  const ctx = propagation.extract(context.active(), req.headers);
-
-  const span = tracer.startSpan(
-    `API ${req.method} ${req.path}`,
-    {
-      kind: 1, // SERVER
-    },
-    ctx
-  );
-
-  // bind span to request lifecycle
-  context.with(trace.setSpan(ctx, span), () => {
-
-    res.on("finish", () => {
-      span.setAttribute("http.status_code", res.statusCode);
-      span.end();
-    });
-
-    next();
-  });
-});
-
-
-
-
 
 const express = require("express");
 const app = express();
