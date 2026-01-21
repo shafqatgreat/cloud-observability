@@ -1,9 +1,9 @@
 'use strict';
 
-require('./tracing')(); // must be first to initialize OTEL
+require('./tracing')(); // Must be first
 
 const express = require('express');
-const fetch = require('node-fetch'); // ensure installed
+const fetch = require('node-fetch');
 const { context, propagation, trace, SpanKind } = require('@opentelemetry/api');
 
 const tracer = trace.getTracer('api-gateway-tracer');
@@ -14,23 +14,17 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 
 /**
- * ================================
  * ROOT TRACE MIDDLEWARE
- * Gateway always starts the root span
- * ================================
  */
 app.use((req, res, next) => {
-  const span = tracer.startSpan(
-    `HTTP ${req.method} ${req.path}`,
-    {
-      kind: SpanKind.SERVER,
-      attributes: {
-        'service.name': 'api-gateway-railway',
-        'http.method': req.method,
-        'http.route': req.path,
-      },
-    }
-  );
+  const span = tracer.startSpan(`HTTP ${req.method} ${req.path}`, {
+    kind: SpanKind.SERVER,
+    attributes: {
+      'service.name': 'api-gateway-railway',
+      'http.method': req.method,
+      'http.route': req.path,
+    },
+  });
 
   const spanCtx = trace.setSpan(context.active(), span);
 
@@ -44,9 +38,7 @@ app.use((req, res, next) => {
 });
 
 /**
- * --------------------
  * CORS
- * --------------------
  */
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,105 +49,101 @@ app.use((req, res, next) => {
 });
 
 /**
- * --------------------
  * Inject trace headers for downstream services
- * --------------------
  */
 function injectTraceHeaders(headers = {}) {
   const carrier = {};
   propagation.inject(context.active(), carrier);
-
   return {
     ...headers,
     ...carrier,
-    'x-internal-call': 'true', // marks internal propagation
+    'x-internal-call': 'true',
   };
 }
 
 /**
- * --------------------
  * LOGIN
- * --------------------
  */
 app.post('/login', async (req, res) => {
-  try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/login`, {
-      method: 'POST',
-      headers: injectTraceHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(req.body),
-    });
+  const rootSpan = trace.getSpan(context.active());
 
-    const data = await response.json();
-    res.json(data);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  context.with(trace.setSpan(context.active(), rootSpan), async () => {
+    try {
+      const response = await fetch(`${AUTH_SERVICE_URL}/login`, {
+        method: 'POST',
+        headers: injectTraceHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 });
 
 /**
- * --------------------
- * AUTHORIZATION MIDDLEWARE
- * --------------------
+ * AUTHORIZATION
  */
 async function authorize(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
-  try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/verify`, {
-      method: 'POST',
-      headers: injectTraceHeaders({
-        'Content-Type': 'application/json',
-        Authorization: token,
-      }),
-    });
+  const rootSpan = trace.getSpan(context.active());
 
-    const data = await response.json();
-    if (!data.valid) return res.status(401).json({ message: 'Unauthorized' });
+  context.with(trace.setSpan(context.active(), rootSpan), async () => {
+    try {
+      const response = await fetch(`${AUTH_SERVICE_URL}/verify`, {
+        method: 'POST',
+        headers: injectTraceHeaders({
+          'Content-Type': 'application/json',
+          Authorization: token,
+        }),
+      });
 
-    req.user = data.user;
-    next();
+      const data = await response.json();
+      if (!data.valid) return res.status(401).json({ message: 'Unauthorized' });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+      req.user = data.user;
+      next();
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 }
 
 /**
- * --------------------
  * ORDERS
- * --------------------
  */
 app.all('/orders', authorize, async (req, res) => {
-  try {
-    const options = {
-      method: req.method,
-      headers: injectTraceHeaders({
-        'Content-Type': 'application/json',
-        'x-user-id': req.user.id,
-        'x-user-email': req.user.email,
-        'x-user-role': req.user.role,
-      }),
-    };
+  const rootSpan = trace.getSpan(context.active());
 
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      options.body = JSON.stringify(req.body);
+  context.with(trace.setSpan(context.active(), rootSpan), async () => {
+    try {
+      const options = {
+        method: req.method,
+        headers: injectTraceHeaders({
+          'Content-Type': 'application/json',
+          'x-user-id': req.user.id,
+          'x-user-email': req.user.email,
+          'x-user-role': req.user.role,
+        }),
+      };
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        options.body = JSON.stringify(req.body);
+      }
+
+      const response = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    const response = await fetch(`${ORDER_SERVICE_URL}/orders`, options);
-    const data = await response.json();
-    res.json(data);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  });
 });
 
 /**
- * --------------------
  * START SERVER
- * --------------------
  */
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`✅ API Gateway running on port ${PORT}`));
