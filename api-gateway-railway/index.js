@@ -1,6 +1,7 @@
 'use strict';
 
 require('./tracing')(); // same as auth-service
+const tracer = require("./tracer");
 const { context, propagation } = require("@opentelemetry/api");
 
 app.use((req, res, next) => {
