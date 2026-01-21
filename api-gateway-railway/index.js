@@ -1,7 +1,6 @@
 'use strict';
 
-// Must be first
-require('./tracing')();
+require('./tracing')(); // must be FIRST
 
 const {
   context,
@@ -19,24 +18,33 @@ app.use(express.json());
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 
-// ================================
-// ROOT TRACE MIDDLEWARE
-// ================================
+/**
+ * ==================================================
+ * ROOT TRACE MIDDLEWARE — GATEWAY IS TRACE BOUNDARY
+ * ==================================================
+ */
 app.use((req, res, next) => {
-  // Gateway always starts root span for external requests
-  const span = tracer.startSpan(`HTTP ${req.method} ${req.path}`, {
-    kind: SpanKind.SERVER,
-    attributes: {
-      'service.name': 'api-gateway-railway',
-      'http.method': req.method,
-      'http.route': req.path,
+  // Gateway always starts the trace
+  const ctx = context.active();
+
+  const span = tracer.startSpan(
+    `HTTP ${req.method} ${req.path}`,
+    {
+      kind: SpanKind.SERVER,
+      attributes: {
+        'service.name': 'api-gateway-railway',
+        'http.method': req.method,
+        'http.route': req.path,
+      },
     },
-  });
+    ctx
+  );
 
-  const spanCtx = trace.setSpan(context.active(), span);
-  req.otSpanCtx = spanCtx; // save for outgoing requests
+  // attach span context to request for downstream propagation
+  req.otSpan = span;
+  req.otSpanCtx = trace.setSpan(ctx, span);
 
-  context.with(spanCtx, () => {
+  context.with(req.otSpanCtx, () => {
     res.on('finish', () => {
       span.setAttribute('http.status_code', res.statusCode);
       span.end();
@@ -45,33 +53,43 @@ app.use((req, res, next) => {
   });
 });
 
-// ================================
-// CORS
-// ================================
+/**
+ * --------------------
+ * CORS
+ * --------------------
+ */
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-trace-id');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type,Authorization,x-trace-id'
+  );
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
-// ================================
-// TRACE HEADER INJECTION
-// ================================
+/**
+ * --------------------
+ * TRACE INJECTION
+ * --------------------
+ */
 function injectTraceHeaders(headers = {}, spanCtx) {
   const carrier = {};
-  propagation.inject(spanCtx, carrier);
+  propagation.inject(spanCtx || context.active(), carrier);
+
   return {
     ...headers,
     ...carrier,
-    'x-internal-call': 'true', // mark as internal call
+    'x-internal-call': 'true', // marks request as internal
   };
 }
 
-// ================================
-// LOGIN
-// ================================
+/**
+ * --------------------
+ * LOGIN
+ * --------------------
+ */
 app.post('/login', async (req, res) => {
   try {
     const data = await context.with(req.otSpanCtx, async () => {
@@ -90,9 +108,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ================================
-// AUTHORIZATION MIDDLEWARE
-// ================================
+/**
+ * --------------------
+ * AUTHORIZATION
+ * --------------------
+ */
 async function authorize(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ message: 'Unauthorized' });
@@ -101,10 +121,10 @@ async function authorize(req, res, next) {
     const data = await context.with(req.otSpanCtx, async () => {
       const response = await fetch(`${AUTH_SERVICE_URL}/verify`, {
         method: 'POST',
-        headers: injectTraceHeaders({
-          'Content-Type': 'application/json',
-          Authorization: token,
-        }, req.otSpanCtx),
+        headers: injectTraceHeaders(
+          { 'Content-Type': 'application/json', Authorization: token },
+          req.otSpanCtx
+        ),
       });
       return response.json();
     });
@@ -119,20 +139,25 @@ async function authorize(req, res, next) {
   }
 }
 
-// ================================
-// ORDERS
-// ================================
+/**
+ * --------------------
+ * ORDERS
+ * --------------------
+ */
 app.all('/orders', authorize, async (req, res) => {
   try {
     const data = await context.with(req.otSpanCtx, async () => {
       const options = {
         method: req.method,
-        headers: injectTraceHeaders({
-          'Content-Type': 'application/json',
-          'x-user-id': req.user.id,
-          'x-user-email': req.user.email,
-          'x-user-role': req.user.role,
-        }, req.otSpanCtx),
+        headers: injectTraceHeaders(
+          {
+            'Content-Type': 'application/json',
+            'x-user-id': req.user.id,
+            'x-user-email': req.user.email,
+            'x-user-role': req.user.role,
+          },
+          req.otSpanCtx
+        ),
       };
 
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -150,8 +175,12 @@ app.all('/orders', authorize, async (req, res) => {
   }
 });
 
-// ================================
-// START SERVER
-// ================================
+/**
+ * --------------------
+ * START SERVER
+ * --------------------
+ */
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`✅ API Gateway running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ API Gateway running on port ${PORT}`)
+);
