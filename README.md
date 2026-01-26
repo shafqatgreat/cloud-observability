@@ -65,9 +65,7 @@ cloud-observability/
 │ ├── tempo.yaml
 │ └── grafana/
 │
-└── README.md ← (this file)
-
-
+└── README.md
 ---
 
 ## 🏗 Complete Architecture Overview
