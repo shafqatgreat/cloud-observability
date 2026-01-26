@@ -205,6 +205,7 @@ Browser test client
 All traces will appear in:
 
 Grafana → Explore → Tempo
+```bash
 
 ☁️ Cloud Deployment
 
