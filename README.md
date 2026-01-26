@@ -17,11 +17,11 @@ they fail because **engineers cannot see what is happening across services**.
 
 This project teaches:
 
-- How requests travel across services
-- How trace context flows
-- Why API Gateways must act as trace roots
-- How distributed tracing works in real systems
-- How cloud-native observability is implemented end-to-end
+- How requests travel across services  
+- How trace context flows  
+- Why API Gateways must act as trace roots  
+- How distributed tracing works in real systems  
+- How cloud-native observability is implemented end-to-end  
 
 This is **not a toy example** — it mirrors real production architecture.
 
@@ -41,70 +41,72 @@ This is **not a toy example** — it mirrors real production architecture.
 
 ---
 
-## 🧩  Structure
+## 🧩 Project Structure
 
+```text
 cloud-observability/
 │
 ├── api-gateway/
-│ ├── index.js
-│ ├── tracing.js
-│ └── README.md
+│   ├── index.js
+│   ├── tracing.js
+│   └── README.md
 │
 ├── auth-service/
-│ ├── index.js
-│ ├── tracing.js
-│ └── README.md
+│   ├── index.js
+│   ├── tracing.js
+│   └── README.md
 │
 ├── order-service/
-│ ├── index.js
-│ ├── tracing.js
-│ └── README.md
+│   ├── index.js
+│   ├── tracing.js
+│   └── README.md
 │
 ├── observability/
-│ ├── docker-compose.yml
-│ ├── tempo.yaml
-│ └── grafana/
+│   ├── docker-compose.yml
+│   ├── tempo.yaml
+│   └── grafana/
 │
 └── README.md
+```
+
 ---
 
 ## 🏗 Complete Architecture Overview
 
+```text
 Client (Browser / API Tool)
-│
-▼
+        │
+        ▼
 ┌──────────────────────────┐
-│ API Gateway │
-│ (Cloudflare Workers) │
-│ Trace Root │
+│        API Gateway       │
+│   (Cloudflare Workers)   │
+│        Trace Root        │
 └───────────┬──────────────┘
-│
-│ trace context
-▼
+            │
+            │ trace context
+            ▼
 ┌────────────────────┐
-│ Auth Service │
-│ (Railway) │
-│ Login / Verify JWT │
+│    Auth Service     │
+│      (Railway)      │
+│  Login / Verify JWT │
 └──────────┬─────────┘
-│
-│ verified token
-▼
+           │
+           │ verified token
+           ▼
 ┌────────────────────┐
-│ Order Service │
-│ (Railway) │
-│ Protected Resources │
+│   Order Service     │
+│      (Railway)      │
+│  Protected Resources│
 └────────────────────┘
 
-          │
-          ▼
-
-
+            │
+            ▼
 ┌──────────────────────────┐
-│ Grafana Tempo │
-│ Distributed Trace Store │
-│ (Local or Cloud) │
+│       Grafana Tempo       │
+│  Distributed Trace Store  │
+│     (Local / Cloud)       │
 └──────────────────────────┘
-
+```
 
 ### 🔒 Important Rule
 
@@ -114,8 +116,6 @@ Client (Browser / API Tool)
 ---
 
 ## 🔁 Functional Request Workflow
-
-This section explains the **business workflow (without tracing)**.
 
 1. Client sends login request to API Gateway  
 2. API Gateway forwards request to Auth Service  
@@ -128,60 +128,57 @@ This section explains the **business workflow (without tracing)**.
 9. Order Service returns protected data  
 10. Response flows back to client  
 
-This mirrors how production backend systems operate.
-
 ---
 
 ## 🔍 Observability Flow (Distributed Tracing)
 
-This project implements **true distributed tracing**.
-
-### How tracing works:
-
-- Every service uses OpenTelemetry Node SDK
-- Trace headers propagate automatically
-- API Gateway acts as the **root span**
-- Auth Service and Order Service create child spans
-- All spans share a single trace ID
-- Entire lifecycle appears in Grafana
+- Each service uses OpenTelemetry Node SDK  
+- Trace headers propagate automatically  
+- API Gateway acts as the **root span**  
+- Downstream services create child spans  
+- All spans share the same trace ID  
 
 ### Result in Grafana:
 
-api-gateway ← ROOT
+```text
+api-gateway  ← ROOT
 ├── auth-service
-│ └── verify
+│   └── verify
 └── order-service
-└── getOrders
-
-
-This allows full visibility across services and cloud boundaries.
+    └── getOrders
+```
 
 ---
 
 ## 🧪 Local Observability Stack
 
-The `observability/` module provides local tracing using Docker.
+Located inside `observability/`
 
-### Includes:
+Includes:
 
-- Grafana Tempo (trace backend)
+- Grafana Tempo
 - Grafana UI
 - OTLP HTTP ingestion
-- Local visualization
+- Docker Compose setup
 
-### Start local observability
+### Start locally
 
 ```bash
 cd observability
 docker compose up
-Grafana UI will be available at:
+```
 
+Grafana UI:
+
+```
 http://localhost:3000
+```
 
-▶️ Running Services Locally
+---
 
-In separate terminals:
+## ▶️ Run Services Locally
 
+```bash
 cd auth-service
 node index.js
 
@@ -190,133 +187,103 @@ node index.js
 
 cd api-gateway
 node index.js
-
+```
 
 Send requests using:
 
-Thunder Client
+- Thunder Client  
+- Postman  
+- Browser test client  
 
-Postman
+View traces in:
 
-Browser test client
-
-All traces will appear in:
-
-Grafana → Explore → Tempo
+**Grafana → Explore → Tempo**
 
 ---
 
-### ☁️ Cloud Deployment
+## ☁️ Cloud Deployment
 
-This project supports full cloud-native deployment.
-
-Deployment Mapping
-Component	Platform
-API Gateway	Cloudflare Workers
-Auth Service	Railway
-Order Service	Railway
-Tracing Backend	Grafana Cloud
-Visualization	Grafana Cloud UI
+| Component | Platform |
+|--------|---------|
+| API Gateway | Cloudflare Workers |
+| Auth Service | Railway |
+| Order Service | Railway |
+| Tracing Backend | Grafana Cloud |
+| Visualization | Grafana Cloud UI |
 
 Once configured:
 
-Traces flow across internet boundaries
+- Traces flow across cloud boundaries  
+- Services appear under one trace  
+- Full lifecycle visible in Explorer & Drilldown  
 
-All services appear under one trace
+---
 
-Explorer & Drilldown show full lifecycle
+## 🚀 Technologies Used
 
-🚀 Technologies Used
+- Node.js  
+- Express.js  
+- OpenTelemetry  
+- Grafana Tempo  
+- Grafana UI  
+- Docker & Docker Compose  
+- Cloudflare Workers  
+- Railway  
+- OTLP HTTP  
 
-Node.js
+---
 
-Express.js
+## 🎓 Learning Outcomes
 
-OpenTelemetry
+You will understand:
 
-Grafana Tempo
-
-Grafana UI
-
-Docker & Docker Compose
-
-Cloudflare Workers
-
-Railway
-
-HTTP / OTLP
-
-🎓 Learning Outcomes
-
-After completing this project, you will understand:
-
-How distributed tracing works internally
-
-Why API Gateways must be trace roots
-
-How context propagation links services
-
-How Grafana Tempo builds service graphs
-
-How production systems are debugged visually
-
-How cloud observability is implemented end-to-end
+- Distributed tracing internals  
+- API Gateway trace root design  
+- Context propagation  
+- Service graph visualization  
+- Production debugging techniques  
+- End-to-end cloud observability  
 
 ---
 
 ## 📘 Tutorial Series
 
-This repository is part of:
+**Node.js Microservices — From Zero to Cloud**
 
-Node.js Microservices — From Zero to Cloud on YouTube
+Covers:
 
-The series covers:
-
-Microservices fundamentals
-
-API Gateway design
-
-Authentication architecture
-
-Cloud deployment strategies
-
-Distributed tracing
-
-Production debugging techniques
+- Microservices fundamentals  
+- API Gateway architecture  
+- Authentication flow  
+- Cloud deployments  
+- Observability & tracing  
+- Production debugging  
 
 ---
 
 ## 📜 License
 
-
-MIT License
-Free to use for learning and educational purposes.
+MIT License  
+Free for learning and educational use.
 
 ---
+
 ## ⭐ Final Note
 
-This project is intentionally designed to reflect real production architecture, not simplified demos.
+This repository is designed to mirror **real production architecture**, not simplified demos.
 
-If you are learning:
+If you are learning microservices, cloud-native systems, or observability —  
+this project provides the **complete picture from client request to cloud trace visualization**.
 
-Microservices
-
-Cloud-native backend systems
-
-Observability
-
-Distributed tracing
-
-This repository gives you the complete picture — from the first client request to cloud trace visualization.
-
+---
 
 ## 👤 Author
 
-Shafqat Altaf
-Serverless • Microservices • API Gateway Architectures
+**Shafqat Altaf**  
+Serverless • Microservices • API Gateway Architectures  
 
 ---
 
-## 👤 YouTube
+## 📺 YouTube
 
-CodingMavrick
+**CodingMavrick**
