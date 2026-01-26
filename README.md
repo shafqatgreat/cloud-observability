@@ -1,4 +1,4 @@
-# 🌐 Cloud Observability — Node.js Microservices Monorepo
+# 🌐 Cloud Observability — Node.js Microservices
 
 A complete **end-to-end cloud observability project** demonstrating how to design, deploy, and observe **Node.js microservices** — starting from **local Docker-based tracing** and progressing to **cloud-native distributed tracing** using **OpenTelemetry and Grafana Tempo**.
 
@@ -41,7 +41,7 @@ This is **not a toy example** — it mirrors real production architecture.
 
 ---
 
-## 🧩 Monorepo Structure
+## 🧩  Structure
 
 cloud-observability/
 │
@@ -262,6 +262,8 @@ How production systems are debugged visually
 
 How cloud observability is implemented end-to-end
 
+---
+
 ## 📘 Tutorial Series
 
 This repository is part of:
@@ -282,11 +284,15 @@ Distributed tracing
 
 Production debugging techniques
 
+---
+
 ## 📜 License
+
 
 MIT License
 Free to use for learning and educational purposes.
 
+---
 ## ⭐ Final Note
 
 This project is intentionally designed to reflect real production architecture, not simplified demos.
@@ -302,3 +308,15 @@ Observability
 Distributed tracing
 
 This repository gives you the complete picture — from the first client request to cloud trace visualization.
+
+
+## 👤 Author
+
+Shafqat Altaf
+Serverless • Microservices • API Gateway Architectures
+
+---
+
+## 👤 YouTube
+
+CodingMavrick
