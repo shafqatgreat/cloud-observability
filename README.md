@@ -287,3 +287,5 @@ Serverless • Microservices • API Gateway Architectures
 ## 📺 YouTube
 
 **CodingMavrick**
+Observability & Distributed Tracing in Node.js Microservices | OpenTelemetry 
+https://youtu.be/wyiem6fc47Q
